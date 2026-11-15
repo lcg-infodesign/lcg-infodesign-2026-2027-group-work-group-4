@@ -1,6 +1,6 @@
 diario di bordo
 
-10/11 
+15/11 
 
 Path è relativo all'HTML, quindi il progetto avrà questa struttura:
 
@@ -23,5 +23,6 @@ y = anno selezionato
    Ogni pagina definisce poi solo ciò che la rende diversa.
 
    abbiamo considerato una visualizzazione lineare ma rappresentare range di numeri così grandi è impossibile
-   i bottoni "methodology" e "team" non hanno ancora una animazione.
+   i bottoni "methodology" e "team" non hanno ancora una animazione e i pop up tool tip potrebbero essere migliorati.
+   da aggiungere anche le varie icone (eg: search e le freccine)
 -X.B.
