@@ -1,0 +1,55 @@
+/* colori */
+:root{
+  --ink:#25241b;
+  --bg:#FDFBEC;
+  --pill:#F8D58C;
+}
+
+* { box-sizing:border-box; }
+html, body { margin:0; background:var(--bg); color:var(--ink); font:14px 'Space Mono', monospace; }
+body { min-height:100vh; display:flex; flex-direction:column; padding:0 40px 18px; }
+h1 { margin:0; font:400 56px 'Archivo Black', Impact, sans-serif; }
+canvas { display:block; }
+
+/* messaggio se il csv non si carica */
+.error { max-width:700px; padding:30px; }
+.lede { max-width:680px; margin:14px 0 0; color:#8b8873; }
+
+/* intestazione */
+header { display:flex; align-items:center; justify-content:space-between; padding-top:34px; }
+.tools { display:flex; align-items:center; gap:16px; }
+.pill, .round { font:700 14px 'Space Mono', monospace; color:var(--ink); background:var(--pill);
+  border:2px solid var(--ink); box-shadow:3px 3px 0 var(--ink); cursor:pointer; }
+.pill { border-radius:999px; padding:12px 18px; }
+.round { padding:12px 14px; border-radius:999px; background:var(--bg); }
+
+/* ricerca: parte chiusa (width 0), la classe .open la apre */
+#search { display:flex; align-items:center; gap:8px; }
+#q { width:0; opacity:0; padding:8px 0; border:2px solid var(--ink); border-radius:999px; font:inherit; }
+#search.open #q { width:180px; opacity:1; padding:8px 14px; }
+
+/* grafico: scorre in orizzontale */
+#scroll { flex:1; margin-top:10px; overflow-x:auto; overflow-y:hidden; }
+
+/* barra anni */
+#years { display:flex; justify-content:space-between; align-items:center; min-height:70px; padding:0 24px; }
+.y { min-width:90px; padding:10px; border:0; background:none; font:400 20px 'Space Mono', monospace; color:#b9b6a2; cursor:pointer; }
+.y.ghost { visibility:hidden; }
+.cur { display:flex; align-items:center; gap:26px; }
+.now { padding:10px 22px; font:700 28px 'Space Mono', monospace; border:2.5px solid var(--ink); border-radius:999px; }
+.arrow { width:36px; height:36px; border:2px solid var(--ink); border-radius:50%; background:none;
+  font:700 16px 'Space Mono', monospace; cursor:pointer; }
+.arrow:disabled { opacity:.3; cursor:default; }
+/* TODO: frecce vere al posto del testo */
+
+/* tooltip */
+#tip { position:fixed; z-index:5; padding:10px 14px; pointer-events:none; opacity:0;
+  background:var(--bg); border:2px solid var(--ink); border-radius:12px; }
+#tip.on { opacity:1; }
+#tip .n { font:400 18px 'Archivo Black', Impact, sans-serif; }
+
+/* finestre */
+dialog { max-width:560px; padding:28px 32px; line-height:1.5; color:var(--ink); background:var(--bg); border:2.5px solid var(--ink); }
+dialog::backdrop { background:rgba(37,36,27,.55); }
+dialog .close { position:absolute; top:10px; right:14px; border:0; background:none; font-size:22px; cursor:pointer; }
+dialog h3 { margin:0 0 10px; font:400 22px 'Archivo Black', Impact, sans-serif; }

@@ -1,0 +1,27 @@
+diario di bordo
+
+10/11 
+
+Path è relativo all'HTML, quindi il progetto avrà questa struttura:
+
+index.html(da finire), continent.html (da fare), > non ancora aggiunti : visione di dettagio html
+sketch.js(dafinire), continent.js (da fare).     > non ancora aggiunti : visione di dettagio js
+style.css
+ assets/wid_panel_2000_2024.csv
+
+sketch.js è in riferimento alla visualizzazione d'insieme
+
+
+continent.js è in riferimento alla visualizzazione meso
+
+la pagina continent si apre dalla main page: come continent.html?c=Africa&y=2018
+c = chiave del continente (come nella colonna "continent" del CSV)
+y = anno selezionato
+
+   CODICE CONDIVISO (identico in sketch.js e continent.js)
+   Contiene: dati, stati, funzioni di disegno e interfaccia comuni.
+   Ogni pagina definisce poi solo ciò che la rende diversa.
+
+   abbiamo considerato una visualizzazione lineare ma rappresentare range di numeri così grandi è impossibile
+   i bottoni "methodology" e "team" non hanno ancora una animazione.
+-X.B.
