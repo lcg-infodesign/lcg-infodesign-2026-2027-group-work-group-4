@@ -1,4 +1,4 @@
-let csvPath = 'assets/wid_panel_2000_2024.csv';   // dove si trova il file csv
+let csvPath = 'assets/wid_panel_2000_2024.csv';   // dove si trova il file csv 
 
 // i 6 continenti: nome nel csv, nome sotto il grafico, colore (\n vuol dire "vai a capo")
 let continents = [
