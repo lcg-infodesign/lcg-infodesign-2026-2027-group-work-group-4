@@ -12,12 +12,16 @@ let continents = [
 
 let marginLeft = 74;   // spazio vuoto a sinistra del grafico
 let marginRight = 28;  // spazio vuoto a destra
-let marginTop = 16;    // spazio vuoto in alto
+let marginTop = 60;    // spazio vuoto in alto (ci stanno le scritte delle linee tagliate)
 let marginBottom = 62; // spazio vuoto in basso (ci stanno i nomi dei continenti)
 
-let axisMin = 2;     // l'asse parte da 10^2 = 100 dollari (stiamo utilizzando un sistema logaritmico)
-let axisMax = 6.85;   // e arriva a circa 7 milioni
-let axisLabels = ['100', '1k', '10k', '100k', '1M'];   // numeri scritti sull'asse
+let axisBreak = 1000000;   // da 1 milione in su la scala si comprime
+let axisMax = 3000000;     // cima della scala: oltre questo valore la linea viene tagliata
+let breakShare = 0.75;     // quanta parte dell'altezza usa la zona da 0 a 1 milione
+let cutHeight = 30;        // spazio sopra la cima della scala, dove finiscono le linee tagliate
+
+let axisValues = [0, 200000, 400000, 600000, 800000, 1000000, 2000000, 3000000];   // dove sta ogni numero dell'asse
+let axisLabels = ['0', '200K', '400K', '600K', '800K', '1M', '2M', '3M'];          // numeri scritti sull'asse
 
 let years = [];     // tutti gli anni del csv, in ordine
 let countries = [];   // tutti i paesi (vedi readData per sapere cosa c'è dentro)
@@ -141,10 +145,15 @@ function isHighlighted(i) {
   return countries[i].name.toLowerCase().includes(searchText);
 }
 
-// da dollari a altezza sullo schermo (scala logaritmica: ogni passo = x10)
+// da dollari a altezza sullo schermo (scala lineare, compressa sopra 1 milione)
 function yPosition(dollars) {
-  let logValue = Math.log10(max(dollars, 1));
-  return map(logValue, axisMin, axisMax, height - marginBottom, marginTop);
+  let bottomY = height - marginBottom;               // altezza dello 0
+  let topY = marginTop + cutHeight;                  // altezza di 3 milioni
+  let breakY = lerp(bottomY, topY, breakShare);      // altezza di 1 milione
+
+  if (dollars <= axisBreak) return map(dollars, 0, axisBreak, bottomY, breakY);    // zona normale
+  if (dollars <= axisMax) return map(dollars, axisBreak, axisMax, breakY, topY);   // zona compressa
+  return marginTop;                                                                // oltre la scala: linea tagliata
 }
 
 // calcola la x di ogni paese e il centro del nome di ogni continente
@@ -307,14 +316,37 @@ function drawCountry(i) {
   let lowY = yPosition(poorBall[i]);
   let highY = yPosition(richBall[i]);
 
+  // la parte piena della linea arriva al massimo alla cima della scala
+  let solidY = highY;
+  let isCut = richBall[i] > axisMax;
+  if (isCut) solidY = yPosition(axisMax);
+
   stroke(colorText);
   strokeWeight(lineWeight);
-  line(lineX[i], lowY, lineX[i], highY);   // la linea tra le due palline
+  line(lineX[i], lowY, lineX[i], solidY);
+
+  // linea tagliata: sopra la cima della scala continua tratteggiata
+  if (isCut) {
+    drawingContext.setLineDash([3, 3]);
+    line(lineX[i], solidY, lineX[i], highY);
+    drawingContext.setLineDash([]);
+  }
 
   noStroke();
   fill(colorText);
   circle(lineX[i], lowY, ballSize);        // pallina bassa
   circle(lineX[i], highY, ballSize);       // pallina alta
+
+  // linea tagliata: scrivo il valore vero sopra la linea, girato di lato
+  if (isCut) {
+    push();
+    translate(lineX[i], highY - 8);
+    rotate(-HALF_PI);
+    fill('#8B8873');
+    textAlign(LEFT, CENTER);
+    text((getRich(i) / 1000000).toFixed(1) + 'M', 0, 0);
+    pop();
+  }
 }
 
 // draw ripete questo codice di continuo (circa 60 volte al secondo)
@@ -326,13 +358,13 @@ function draw() {
   hoverCountry = findCountryUnderMouse();
   updateTooltip();
 
-  let baseline = yPosition(100);           // altezza della linea di base (100 dollari)
+  let baseline = yPosition(0);             // altezza della linea di base (0 dollari)
 
   // griglia e numeri sull'asse
   textFont('Space Mono');
   textSize(11);
   for (let k = 0; k < axisLabels.length; k++) {
-    let y = yPosition(pow(10, k + 2));     // 10^2, 10^3, 10^4 ...
+    let y = yPosition(axisValues[k]);      // altezza di questo numero dell'asse
 
     stroke('#E6E3D1');
     strokeWeight(1);
