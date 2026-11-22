@@ -49,8 +49,7 @@ async function setup() {
   let lines = await loadStrings(csvPath);   // si carica il file csv e await tiene set up in pausa affinché il caricamento è finito
   readData(lines);  //readData effetua un parsing, ovvero prende dei string di dati e li organizza in formati utilizzabili in codice (come un array)
 
-  // adesso che ho i dati, creo il grafico
-  createCanvas(max(1000, scrollBox.clientWidth), max(470, windowHeight - 300)).parent('chartBox');
+  createCanvas(scrollBox.clientWidth, scrollBox.clientHeight).parent('chartBox');
   placeLines();
   drawYearBar();
 
@@ -70,6 +69,15 @@ async function setup() {
   searchInput.oninput = function () {
     searchText = searchInput.value.trim().toLowerCase();
   };
+}
+
+//quando la dimensione della finestra cambia il grafico si adatta
+function windowResized() {
+  if (countries.length == 0) return;
+  resizeCanvas(scrollBox.clientWidth, scrollBox.clientHeight);
+  lineX = [];
+  labelX = [];
+  placeLines();
 }
 
 // da nome del continente ('Asia') a numero (1)
@@ -102,7 +110,7 @@ function readData(lines) {
 
     // se è la prima volta che il paese è visto viene creato la sua scheda
     if (cards[row.iso2] == undefined) {
-      cards[row.iso2] = { name: row.country_name, continent: continentNumber(row.continent), poor: {}, rich: {} };
+      cards[row.iso2] = { iso: row.iso2, name: row.country_name, continent: continentNumber(row.continent), poor: {}, rich: {} }; //cambiato il codice per costruire il link alla pagina di dettaglio
     }
 
     // le , nel csv diventano . - parseFloat legge solo . come separatore
@@ -214,8 +222,7 @@ function changeYear(newIndex) {
 // click su una linea: apre la pagina del suo continente
 function mouseClicked() {
   if (hoverCountry < 0) return;   // nessuna linea sotto il mouse: non faccio niente
-  let continentName = continents[countries[hoverCountry].continent].key;
-  location.href = 'continent.html?c=' + continentName + '&y=' + years[yearIndex];
+  location.href = 'country.html?c=' + countries[hoverCountry].iso + '&y=' + years[yearIndex]; //click porta a country.html, passando il codice del paese (c=IT) e l'anno selezionato (y=2024) > la pagina di dettaglio si apre sullo stesso anno dell'index.
 }
 
 // c'è una finestra aperta (METHODOLOGY o TEAM)?
@@ -329,7 +336,7 @@ function draw() {
   let baseline = yPosition(100);           // altezza della linea di base (100 dollari)
 
   // griglia e numeri sull'asse
-  textFont('Space Mono');
+  textFont('Geist Mono');
   textSize(11);
   for (let k = 0; k < axisLabels.length; k++) {
     let y = yPosition(pow(10, k + 2));     // 10^2, 10^3, 10^4 ...

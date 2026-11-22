@@ -1,8 +1,9 @@
-/* colori e font: cambiali qui, valgono per tutta la pagina */
+/* colori e font: valgono per tutta la pagina */
 :root {
-  --ink: #25241b;
-  --bg: #FDFBEC;
-  --title: 'Archivo Black', Impact, sans-serif;
+  --ink: #272318;
+  --bg: #FFFCF2;
+  --title: 'Unbounded', sans-serif;
+  --h1-size: 35px;
 }
 
 * { box-sizing: border-box; }
@@ -10,16 +11,17 @@
 body {
   margin: 0;
   min-height: 100vh;
+  min-width: 1100px;
   padding: 0 40px 18px;
   display: flex;
   flex-direction: column;
   background: var(--bg);
   color: var(--ink);
-  font: 14px 'Space Mono', monospace;
+  font: 14px 'Geist Mono', monospace;
 }
 
 button { font: inherit; }   /* i bottoni usano lo stesso font della pagina */
-h1 { margin: 0; font: 400 56px var(--title); }
+h1 { margin: 0; font: 900 var(--h1-size) var(--title); }
 canvas { display: block; }
 
 /* intestazione */
@@ -36,7 +38,7 @@ header { display: flex; align-items: center; justify-content: space-between; pad
   box-shadow: 3px 3px 0 var(--ink);
   cursor: pointer;
 }
-.pill-button { padding: 12px 18px; background: #F8D58C; }
+.pill-button { padding: 12px 18px; background: #FFFCF2; }
 .round-button { padding: 12px 14px; background: var(--bg); }
 
 /* ricerca: parte chiusa (width 0), la classe .open la apre */
@@ -44,29 +46,47 @@ header { display: flex; align-items: center; justify-content: space-between; pad
 #searchInput { width: 0; opacity: 0; padding: 8px 0; border: 2px solid var(--ink); border-radius: 999px; font: inherit; }
 #searchBox.open #searchInput { width: 180px; opacity: 1; padding: 8px 14px; }
 
-/* grafico: scorre in orizzontale */
-#scrollBox { flex: 1; margin-top: 10px; overflow-x: auto; overflow-y: hidden; }
+/* grafico: scorre in orizzontale > cambiato: non scorre in orizozntale */
+#scrollBox { position: relative; flex: 1; min-height: 0; margin-top: 10px; overflow: hidden; }
+#chartBox { position: absolute; inset: 0; }
 
 /* barra anni */
-#yearBar { display: flex; justify-content: space-between; align-items: center; min-height: 70px; padding: 0 24px; }
+#yearBar { display: flex; justify-content: space-between; align-items: center; min-height: 48px; padding: 0 24px; }
 
-.year-button { min-width: 90px; padding: 10px; border: 0; background: none; font-size: 20px; color: #b9b6a2; cursor: pointer; }
+.year-button { min-width: 60px; padding: 6px; border: 0; background: none; font-size: 14px; color: #b9b6a2; cursor: pointer; }
 .year-button.empty { visibility: hidden; }
 
-.current-year { display: flex; align-items: center; gap: 26px; }
-.year-number { padding: 10px 22px; font-size: 28px; font-weight: 700; border: 2.5px solid var(--ink); border-radius: 999px; }
+.current-year { display: flex; align-items: center; gap: 16px; }
+.year-number { padding: 5px 16px; font-size: 20px; font-weight: 700; border: 2.5px solid var(--ink); border-radius: 999px; }
 
-.year-arrow { width: 36px; height: 36px; border: 2px solid var(--ink); border-radius: 50%; background: none; font-weight: 700; cursor: pointer; }
+.year-arrow { width: 28px; height: 28px; border: 2px solid var(--ink); border-radius: 50%; background: none; font-size: 12px; font-weight: 700; cursor: pointer; }
 .year-arrow:disabled { opacity: .3; cursor: default; }
 /* TODO: frecce vere al posto del testo */
 
 /* tooltip */
 #tooltip { position: fixed; padding: 10px 14px; pointer-events: none; opacity: 0; background: var(--bg); border: 2px solid var(--ink); border-radius: 12px; }
 #tooltip.visible { opacity: 1; }
-#tooltip .country-name { font: 400 18px var(--title); }
+#tooltip .country-name { font: 400 16px var(--title); }
 
 /* finestre */
 dialog { max-width: 560px; padding: 28px 32px; line-height: 1.5; color: var(--ink); background: var(--bg); border: 2.5px solid var(--ink); }
 dialog::backdrop { background: rgba(37, 36, 27, .55); }
 dialog h3 { margin: 0 0 10px; font: 400 22px var(--title); }
 dialog .close-button { position: absolute; top: 10px; right: 14px; border: 0; background: none; font-size: 22px; cursor: pointer; }
+
+/* pagina di dettaglio del paese */
+.detail-title { margin: 30px 0 0 38px; font: 700 28px var(--title); line-height: 1.1; }
+.detail-sub { margin: 10px 0 0 38px; min-height: 1.5em; color: #272318; }
+.detail-sub b { color: var(--ink); }
+
+/* freccia indietro: grande 2/3 del nome del paese, a sinistra */
+.title-row { display: flex; align-items: center; gap: 16px; }
+.back-arrow { display: block; color: var(--ink); line-height: 0; }
+.back-arrow svg { display: block; width: calc(var(--h1-size) * 2 / 3); height: calc(var(--h1-size) * 2 / 3); }
+.back-arrow:hover { transform: translateX(-3px); }
+
+/* istogramma paese occupa 2/3 della pagina */
+.country-page #scrollBox { width: 60vw; margin-left: -30px}
+
+/* diminuito il padding superiore del nome del Paese selezionato (era troppo sotto prima) */
+.country-page header { padding-top: 18px; }

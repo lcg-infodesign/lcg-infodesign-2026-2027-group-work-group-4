@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>PAY DAY - country</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:ital,wght@0,100..900;1,100..900&family=Unbounded:wght@200..900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+
+  <script src="libraries/p5.min.js"></script>
+  <script src="country.js"></script>
+</head>
+<body class="country-page">
+  <header>
+  <div class="title-row">
+    <a class="back-arrow" href="index.html" aria-label="Back">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter">
+        <path d="M21 12H4M11 5l-7 7 7 7"/>
+      </svg>
+    </a>
+    <h1 id="countryName">PAY DAY</h1>
+  </div>
+</header>
+
+  <h2 class="detail-title">AVERAGE INCOME <br/> BY PERCENTILE GROUPS</h2>
+  <p class="detail-sub" id="subtitle"></p>
+
+  <div id="scrollBox"><div id="chartBox"></div></div>
+  <div id="yearBar"></div>
+</body>
+</html>
