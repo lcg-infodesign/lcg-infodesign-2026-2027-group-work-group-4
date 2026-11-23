@@ -1,6 +1,7 @@
 let csvPath = 'assets/wid_panel_2000_2024.csv';
 
 let shadowX = 4, shadowY = 4; //posizione dell'ombra in pixel: x positivo = destra, y positivo = giù
+let panelShadow = 8; //ombra del riquadro GDP SHARE in pixel (verso destra e verso il basso)
 
 //palette continenti
 let palette = {
@@ -19,6 +20,9 @@ let groups = [
   { label: '40%', key: 'avg_posttax_usd_middle40' },
   { label: '50%', key: 'avg_posttax_usd_bottom50' }
 ];
+
+//colonne del csv con gli share post-tax dei gruppi > servono per il grafico a torta
+let shareKeys = ['share_posttax_bottom50', 'share_posttax_middle40', 'share_posttax_top10', 'share_posttax_top1'];
 
 // scale per l'istogramma, dalla più piccola alla più grande: 
 // "upTo" è fino a >= dell'1% del paese;
@@ -52,6 +56,23 @@ let shown = [0, 0, 0, 0]; //lunghezza attuale di ogni barra > per creare animazi
 let shownOverall = 0; //avg income overall animato
 let lastSubtitle = ''; //ultimo testo scritto > non riscrive la pagina quando non cambia nulla
 let yearBar, scrollBox; //contengono elementi pag html
+let subtitleBox; //il paragrafo "Average income overall: ..." (#subtitle), che si sposta sopra la barra dell'avg income overall
+let subtitleLeft = 0, subtitleGap = 0; //posizione di #subtitle a riposo: x sulla pagina e distanza (in verticale) dalla cima del canvas
+let chartLeft = 0; //x sulla pagina dell'inizio del canvas dell'istogramma
+let subtitleWidth = 200; //larghezza della didascalia in pixel: il testo va a capo su due righe, come nell'immagine di riferimento
+let overallWeight = 3; //spessore della barra dell'avg income overall (le linee principali sono 1.8, gli assi 3)
+let panel; //riquadro marrone GDP SHARE (div creato da createPie): contiene titolo, didascalia, torta e legenda
+let pieBox; //div dentro il riquadro che contiene il canvas del grafico a torta
+let panelCaption; //didascalia "anno GDP = ..."
+let legendTexts = []; //le 4 descrizioni della legenda (una per gruppo percentile)
+//gruppi percentili nell'ordine della legenda (dall'alto in basso); il pallino ha il colore groupColor(i) > stesso colore delle barre
+//shareIndex: posizione del gruppo nella lista di pieShares (bottom50, middle40, top9, top1)
+let legendGroups = [
+  { name: 'top 1%',     shareIndex: 3 },
+  { name: '9%',         shareIndex: 2 },
+  { name: '40%',        shareIndex: 1 },
+  { name: 'bottom 50%', shareIndex: 0 }
+];
 
 async function setup() {
   noCanvas(); //crea il canvas solo quando i dati sono pronti
@@ -89,6 +110,10 @@ async function setup() {
   new ResizeObserver(function () {
     resizeCanvas(scrollBox.clientWidth, scrollBox.clientHeight);
   }).observe(scrollBox);
+
+  setupSubtitle(); //prepara la didascalia dell'avg income overall per seguire la sua barra
+
+  createPie(); //crea il riquadro GDP SHARE (con la torta dentro) a destra dell'istogramma
 }
 
 // legge solo le righe del paese selezionato
@@ -114,6 +139,14 @@ function readData(lines, code) {
     for (let g = 0; g < groups.length; g++) {
       rows[year][groups[g].key] = parseFloat(String(row[groups[g].key]).replace(',', '.')); //cambia da , a . per i numeri dal 10.000 in su perchè mi piace di più il punto,, penso sia più comprensibile
     }
+
+    //stesso ciclo per gli share post-tax (nel csv hanno la virgola: 0,1886) > rows[year].share_posttax_top1 ecc.
+    for (let k = 0; k < shareKeys.length; k++) {
+      rows[year][shareKeys[k]] = parseFloat(String(row[shareKeys[k]]).replace(',', '.'));
+    }
+
+    //GDP del paese in dollari correnti, per la didascalia del riquadro GDP SHARE
+    rows[year].gdp = parseFloat(String(row.gdp_usd_current).replace(',', '.'));
   }
   years.sort(function (a, b) { return a - b; }); //ordina anni dal più piccolo al più grande
 }
@@ -150,6 +183,40 @@ function hasData() {
 function overallAverage() {
   let r = rows[years[yearIndex]];
   return 0.5 * r.avg_posttax_usd_bottom50 + 0.4 * r.avg_posttax_usd_middle40 + 0.1 * r.avg_posttax_usd_top10;
+}
+
+//prepara #subtitle: resta nel suo posto della pagina (così il resto del layout non si muove) ma lo spostiamo con left/top
+//misura una volta sola dove si trova a riposo, poi placeSubtitle lo sposta
+function setupSubtitle() {
+  subtitleBox = document.getElementById('subtitle');
+  Object.assign(subtitleBox.style, {
+    position: 'relative', //si può spostare con left/top senza liberare il suo spazio
+    zIndex: '1', //sopra il canvas
+    width: subtitleWidth + 'px',
+    height: '1.5em', //altezza di una riga (come il min-height del css): la seconda riga esce verso il basso senza spingere giù l'istogramma
+    margin: '10px 0 0 0', //tolto il margine sinistro di 38px: la x la decide placeSubtitle
+    textAlign: 'center' //testo centrato sulla barra
+  });
+
+  let sub = subtitleBox.getBoundingClientRect();
+  let chart = scrollBox.getBoundingClientRect();
+  subtitleLeft = sub.left + window.scrollX; //x a riposo
+  subtitleGap = chart.top - sub.top; //distanza tra la cima di #subtitle (a riposo) e la cima del canvas
+  chartLeft = chart.left + window.scrollX;
+}
+
+//mette la didascalia centrata sopra la barra dell'avg income overall, poco sopra la cima del grafico (top = y della cima delle linee nel canvas)
+function placeSubtitle(top) {
+  if (subtitleBox == undefined) return; //se setupSubtitle non è ancora stata chiamata non fa niente
+
+  //x: centro della didascalia = x della barra; non esce dal margine sinistro della pagina (40px, come il padding del body)
+  let barX = chartLeft + xPosition(shownOverall);
+  let leftEdge = max(40, barX - subtitleWidth / 2);
+  subtitleBox.style.left = Math.round(leftEdge - subtitleLeft) + 'px';
+
+  //y: il fondo della didascalia (alta quanto il suo testo, anche su due righe) sta 8px sopra la cima del grafico
+  let textH = subtitleBox.scrollHeight;
+  subtitleBox.style.top = Math.round(subtitleGap + top - 8 - textH) + 'px';
 }
 
 //sottotitolo avg income overall
@@ -259,6 +326,15 @@ function draw() {
     text(formatTick(scale.ticks[t]), xPosition(scale.ticks[t]), bottom + 14); //scrive ogni numero sotto la sua linea, 14px sotto la fine del grafico
   }
 
+  //barra verticale dell'avg income overall: più spessa delle linee della griglia, nella posizione (animata) del valore
+  //è disegnata prima delle barre, quindi le barre dei gruppi passano sopra
+  if (hasData()) {
+    stroke('#272318');
+    strokeWeight(overallWeight);
+    line(xPosition(shownOverall), top, xPosition(shownOverall), bottom);
+  }
+  placeSubtitle(top); //sposta la didascalia sopra la barra
+
   let x0 = xPosition(0);
 
   for (let g = 0; g < groups.length; g++) {
@@ -356,6 +432,7 @@ function changeYear(newIndex) {
   if (newIndex < 0 || newIndex >= years.length) return; //se la posizione richiesta non esiste, non fa niente
   yearIndex = newIndex; //salva il nuovo anno
   updateSubtitle(); //aggiorna il sottotitolo
+  updatePanel(); //aggiorna didascalia e legenda del riquadro GDP SHARE
   drawYearBar(); //ricostruisce la barra degli anni
   history.replaceState(null, '', '?c=' + iso + '&y=' + years[yearIndex]); //cambia l'indirizzo nella barra del browser (senza ricaricare la pagina) con il nuovo anno
 }
@@ -364,4 +441,159 @@ function changeYear(newIndex) {
 function keyPressed() {
   if (keyCode == LEFT_ARROW) changeYear(yearIndex - 1);
   if (keyCode == RIGHT_ARROW) changeYear(yearIndex + 1);
+}
+
+//calcola gli share post-tax dei 4 gruppi per l'anno scelto, nell'ordine in cui compaiono nella torta (in senso orario da ore 12)
+//risponde null se manca qualche dato
+function pieShares() {
+  let r = rows[years[yearIndex]];
+
+  //il top 10% contiene già il top 1% > lo share del 9% è la differenza tra i due
+  let share_posttax_top9 = r.share_posttax_top10 - r.share_posttax_top1;
+
+  let shares = [r.share_posttax_bottom50, r.share_posttax_middle40, share_posttax_top9, r.share_posttax_top1];
+
+  //se anche uno solo non è un numero (o è negativo) risponde "niente dati"
+  for (let i = 0; i < shares.length; i++) if (!(shares[i] >= 0)) return null;
+  return shares;
+}
+
+//crea il riquadro GDP SHARE: titolo, bottone info, didascalia, torta e legenda
+//la torta è un secondo sketch p5 (modalità istanza), così non tocca il canvas dell'istogramma
+function createPie() {
+  //riquadro marrone: bordo color sfondo + ombra piena spostata in basso a destra (stile neobrutalista, come le barre)
+  panel = document.createElement('div');
+  Object.assign(panel.style, {
+    position: 'absolute', //fuori dal flusso della pagina > lo posizionamo noi (placePie)
+    padding: '28px 30px 32px',
+    color: '#FFFCF2',
+    background: '#272318',
+    border: '2px solid #FFFCF2',
+    boxShadow: panelShadow + 'px ' + panelShadow + 'px 0 #272318'
+  });
+  document.body.appendChild(panel);
+
+  //intestazione: titolo a sinistra, bottone info a destra
+  let head = document.createElement('div');
+  Object.assign(head.style, { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' });
+  panel.appendChild(head);
+
+  let title = document.createElement('h2');
+  title.textContent = 'GDP SHARE';
+  Object.assign(title.style, { margin: '0', font: '900 30px var(--title)', lineHeight: '1.1' }); //stesso font dei titoli della pagina
+  head.appendChild(title);
+
+  //bottone quadrato con "i": per ora si può cliccare ma non succede nulla
+  let infoButton = document.createElement('button');
+  infoButton.textContent = 'i';
+  infoButton.setAttribute('aria-label', 'Info');
+  Object.assign(infoButton.style, {
+    flex: '0 0 auto', width: '40px', height: '40px', padding: '0',
+    color: '#FFFCF2', background: 'transparent', border: '2px solid #FFFCF2', borderRadius: '0',
+    fontSize: '20px', cursor: 'pointer'
+  });
+  head.appendChild(infoButton);
+
+  //didascalia: "2018 GDP = $20.656.515 million" (la scrive updatePanel)
+  panelCaption = document.createElement('p');
+  Object.assign(panelCaption.style, { margin: '14px 0 0', fontSize: '15px', fontWeight: '600' });
+  panel.appendChild(panelCaption);
+
+  //contenitore del canvas della torta, centrato nel riquadro
+  pieBox = document.createElement('div');
+  Object.assign(pieBox.style, { display: 'flex', justifyContent: 'center', margin: '26px 0 28px' });
+  panel.appendChild(pieBox);
+
+  //legenda: per ogni gruppo un pallino colorato + la descrizione (la scrive updatePanel)
+  let legend = document.createElement('ul');
+  Object.assign(legend.style, { display: 'flex', flexDirection: 'column', gap: '14px', margin: '0', padding: '0', listStyle: 'none' });
+  panel.appendChild(legend);
+
+  for (let i = 0; i < legendGroups.length; i++) {
+    let item = document.createElement('li');
+    Object.assign(item.style, { display: 'flex', alignItems: 'center', gap: '14px', fontSize: '14px', lineHeight: '1.3' });
+
+    let dot = document.createElement('span'); //pallino: stesso colore del gruppo nelle barre e nella torta
+    Object.assign(dot.style, { flex: '0 0 20px', width: '20px', height: '20px', borderRadius: '50%', background: groupColor(i) });
+
+    legendTexts[i] = document.createElement('span');
+
+    item.appendChild(dot);
+    item.appendChild(legendTexts[i]);
+    legend.appendChild(item);
+  }
+
+  placePanel(); //posizione e larghezza
+  updatePanel(); //testi
+  new p5(pieSketch, pieBox);
+
+  //se cambia la dimensione dell'istogramma (finestra, font) il riquadro si riposiziona
+  new ResizeObserver(placePanel).observe(scrollBox);
+}
+
+//posizione del riquadro (come nell'immagine di riferimento): a destra, con la cima poco sopra l'istogramma, larghezza circa 29% della pagina
+function placePanel() {
+  let box = scrollBox.getBoundingClientRect(); //posizione dell'istogramma nella finestra
+
+  panel.style.width = Math.round(window.innerWidth * 0.291) + 'px';
+  panel.style.left = Math.round(window.innerWidth * 0.645 + window.scrollX) + 'px';
+  panel.style.top = Math.round(box.top - 87 + window.scrollY) + 'px'; //87px sopra l'istogramma: all'altezza del titolo della pagina
+}
+
+//scrive didascalia e legenda per l'anno scelto (si chiama alla creazione e a ogni cambio anno)
+function updatePanel() {
+  let r = rows[years[yearIndex]];
+
+  //"2018 GDP = $20.656.515 million" (GDP in milioni di dollari; n/a se manca il dato)
+  let gdpText = 'n/a';
+  if (r.gdp > 0) gdpText = '$' + Math.round(r.gdp / 1000000).toLocaleString('it-IT', { useGrouping: 'always' }) + ' million';
+  panelCaption.textContent = years[yearIndex] + ' GDP = ' + gdpText;
+
+  //"The top 1% earned 15,3% of the country's GDP." (stesso formato italiano dei numeri dell'istogramma)
+  let shares = pieShares();
+  for (let i = 0; i < legendGroups.length; i++) {
+    if (shares == null) {
+      legendTexts[i].textContent = 'The ' + legendGroups[i].name + ': no data for this year.';
+      continue;
+    }
+    let percent = (shares[legendGroups[i].shareIndex] * 100).toLocaleString('it-IT', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    legendTexts[i].textContent = 'The ' + legendGroups[i].name + ' earned ' + percent + '% of the country\u2019s GDP.';
+  }
+}
+
+//lato del canvas della torta: segue la larghezza del riquadro (circa metà), tra 140 e 240 px
+function pieSize() {
+  return Math.round(constrain(panel.clientWidth * 0.53, 140, 240));
+}
+
+//sketch della torta: spicchi in senso orario da ore 12 = bottom 50%, middle 40%, top 9%, top 1%
+function pieSketch(p) {
+  p.setup = function () {
+    p.createCanvas(pieSize(), pieSize());
+  };
+
+  p.draw = function () {
+    p.clear(); //sfondo trasparente
+    if (pieSize() != p.width) p.resizeCanvas(pieSize(), pieSize()); //se il riquadro cambia larghezza, la torta la segue
+
+    let shares = pieShares();
+    if (shares == null) return; //niente dati per quest'anno > niente torta
+
+    let d = p.width - 4; //diametro (lascia spazio al bordo)
+    let angle = -p.HALF_PI; //parte da ore 12
+    p.stroke('#272318'); //bordo tra gli spicchi: stesso marrone del riquadro (e delle barre)
+    p.strokeWeight(2);
+
+    //ogni spicchio ha un angolo proporzionale al suo share (il totale degli share è 1 = giro intero)
+    //colori della palette del continente, come le barre: top 1% = 0, top 9% = 1, middle 40% = 2, bottom 50% = 3
+    let colorOf = [3, 2, 1, 0]; //colore di ogni spicchio, nello stesso ordine di pieShares
+    for (let i = 0; i < shares.length; i++) {
+      let sweep = shares[i] * p.TWO_PI;
+      if (sweep > 0.002) { //salta spicchi nulli
+        p.fill(groupColor(colorOf[i]));
+        p.arc(p.width / 2, p.height / 2, d, d, angle, angle + sweep, p.PIE);
+      }
+      angle += sweep;
+    }
+  };
 }
