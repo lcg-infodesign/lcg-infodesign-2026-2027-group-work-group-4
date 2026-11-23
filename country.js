@@ -332,6 +332,8 @@ function draw() {
 //barra degli anni (stessa dell'index)
 function drawYearBar() {
   let html = '';
+  let arrowLeft = '<svg width="24" height="16" viewBox="0 0 24 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 8H2M8 1L1 8l7 7"/></svg>';
+  let arrowRight = '<svg width="24" height="16" viewBox="0 0 24 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 8H22M16 1l7 7-7 7"/></svg>';
   for (let offset = -3; offset <= 3; offset++) {
     let pos = yearIndex + offset;
     if (pos < 0 || pos >= years.length) {
@@ -342,9 +344,9 @@ function drawYearBar() {
       let leftOff = pos == 0 ? ' disabled' : '';
       let rightOff = pos == years.length - 1 ? ' disabled' : '';
       html += '<div class="current-year">';
-      html += '<button class="year-arrow" onclick="changeYear(' + (pos - 1) + ')"' + leftOff + '>&lt;</button>';
+      html += '<button class="year-arrow" onclick="changeYear(' + (pos - 1) + ')"' + leftOff + '>' + arrowLeft + '</button>';
       html += '<div class="year-number">' + years[pos] + '</div>';
-      html += '<button class="year-arrow" onclick="changeYear(' + (pos + 1) + ')"' + rightOff + '>&gt;</button>';
+      html += '<button class="year-arrow" onclick="changeYear(' + (pos + 1) + ')"' + rightOff + '>' + arrowRight + '</button>';
       html += '</div>';
     }
   }

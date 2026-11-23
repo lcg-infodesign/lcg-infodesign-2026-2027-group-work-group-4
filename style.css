@@ -1,6 +1,6 @@
 /* colori e font: valgono per tutta la pagina */
 :root {
-  --ink: #272318;
+  --ink: #25241B;
   --bg: #FFFCF2;
   --title: 'Unbounded', sans-serif;
   --h1-size: 35px;
@@ -10,9 +10,9 @@
 
 body {
   margin: 0;
-  min-height: 100vh;
+  height: 100vh;
   min-width: 1100px;
-  padding: 0 40px 18px;
+  padding: 0;
   display: flex;
   flex-direction: column;
   background: var(--bg);
@@ -20,53 +20,105 @@ body {
   font: 14px 'Geist Mono', monospace;
 }
 
-button { font: inherit; }   /* i bottoni usano lo stesso font della pagina */
+button { font: inherit; color: inherit; }
 h1 { margin: 0; font: 900 var(--h1-size) var(--title); }
 canvas { display: block; }
 
-/* intestazione */
-header { display: flex; align-items: center; justify-content: space-between; padding-top: 34px; }
-.toolbar { display: flex; align-items: center; gap: 16px; }
-.intro { max-width: 680px; margin: 14px 0 0; color: #8b8873; }
+/* intestazione: una riga con linea sotto, titolo | ricerca | METHODOLOGY | TEAM */
+header {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  height: 56px;
+  border-bottom: 2px solid var(--ink);
+}
+header h1 { display: flex; align-items: center; padding: 0 18px; border-right: 2px solid var(--ink); }
+.toolbar { display: flex; align-items: stretch; }
 
-/* bottoni gialli (METHODOLOGY, TEAM) e bottone search */
+/* bottoni dell'intestazione: niente ombra, separati da linee verticali */
 .pill-button, .round-button {
-  font-weight: 700;
-  color: var(--ink);
-  border: 2px solid var(--ink);
-  border-radius: 999px;
-  box-shadow: 3px 3px 0 var(--ink);
+  display: flex;
+  align-items: center;
+  padding: 0 22px;
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: .5px;
+  background: none;
+  border: 0;
   cursor: pointer;
 }
-.pill-button { padding: 12px 18px; background: #FFFCF2; }
-.round-button { padding: 12px 14px; background: var(--bg); }
+.pill-button { border-left: 2px solid var(--ink); }
+.round-button { padding: 0 20px; }
+
+/* hover: colori invertiti (riempimento = colore del testo, testo = colore dello sfondo) e testo sottolineato */
+.pill-button, .round-button, .info-button { transition: background .15s, color .15s; }
+.pill-button:hover, .round-button:hover, .info-button:hover {
+  background: var(--ink);
+  color: var(--bg);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 2px;
+}
 
 /* ricerca: parte chiusa (width 0), la classe .open la apre */
-#searchBox { display: flex; align-items: center; gap: 8px; }
-#searchInput { width: 0; opacity: 0; padding: 8px 0; border: 2px solid var(--ink); border-radius: 999px; font: inherit; }
-#searchBox.open #searchInput { width: 180px; opacity: 1; padding: 8px 14px; }
+#searchBox { display: flex; align-items: stretch; }
+#searchInput {
+  width: 0; opacity: 0; padding: 4px 0;
+  border: 0; border-bottom: 2px solid var(--ink);
+  background: none; font: inherit; outline: none;
+  /* animazione: si allarga verso sinistra partendo dalla lente (e si richiude allo stesso modo) */
+  transition: width .4s cubic-bezier(.2, .8, .2, 1), padding .4s cubic-bezier(.2, .8, .2, 1), opacity .25s ease;
+}
+#searchBox.open #searchInput { width: 220px; opacity: 1; padding: 4px 6px; }
 
-/* grafico: scorre in orizzontale > cambiato: non scorre in orizozntale */
-#scrollBox { position: relative; flex: 1; min-height: 0; margin-top: 10px; overflow: hidden; }
+/* grafico */
+#scrollBox { position: relative; flex: 1; min-height: 0; overflow: hidden; }
 #chartBox { position: absolute; inset: 0; }
 
-/* barra anni */
-#yearBar { display: flex; justify-content: space-between; align-items: center; min-height: 48px; padding: 0 24px; }
+/* bottone "i" e riquadro introduttivo */
+.info-button {
+  position: absolute; top: 24px; left: 28px; z-index: 2;
+  width: 34px; height: 34px;
+  font-size: 18px; background: var(--bg);
+  border: 2px solid var(--ink); box-shadow: 4px 4px 0 var(--ink);
+  cursor: pointer;
+}
+.info-box {
+  display: none;
+  position: absolute; top: 24px; left: 28px; z-index: 3;
+  width: 400px; padding: 16px 22px;
+  background: var(--bg); border: 2px solid var(--ink); box-shadow: 5px 5px 0 var(--ink);
+}
+.info-box.open { display: block; }
+.info-box p { margin: 0 0 14px; }
+.info-box button { padding: 0; border: 0; background: none; text-decoration: underline; color: #8B8873; cursor: pointer; }
 
-.year-button { min-width: 60px; padding: 6px; border: 0; background: none; font-size: 14px; color: #b9b6a2; cursor: pointer; }
+/* barra anni, con linea sopra */
+#yearBar { display: flex; justify-content: space-between; align-items: center; min-height: 66px; padding: 0 60px; border-top: 2px solid var(--ink); }
+
+.year-button { min-width: 60px; padding: 6px; border: 0; background: none; font-size: 15px; color: #b9b6a2; cursor: pointer; }
 .year-button.empty { visibility: hidden; }
 
-.current-year { display: flex; align-items: center; gap: 16px; }
-.year-number { padding: 5px 16px; font-size: 20px; font-weight: 700; border: 2.5px solid var(--ink); border-radius: 999px; }
+.current-year { display: flex; align-items: center; gap: 36px; }
+.year-number { font-size: 32px; font-weight: 700; }
 
-.year-arrow { width: 28px; height: 28px; border: 2px solid var(--ink); border-radius: 50%; background: none; font-size: 12px; font-weight: 700; cursor: pointer; }
-.year-arrow:disabled { opacity: .3; cursor: default; }
-/* TODO: frecce vere al posto del testo */
+.year-arrow { display: flex; padding: 4px; border: 0; background: none; cursor: pointer; }
+.year-arrow:disabled { opacity: .25; cursor: default; }
 
 /* tooltip */
-#tooltip { position: fixed; padding: 10px 14px; pointer-events: none; opacity: 0; background: var(--bg); border: 2px solid var(--ink); border-radius: 12px; }
+#tooltip {
+  position: fixed; z-index: 10;
+  width: 232px; padding: 18px 20px;
+  pointer-events: none; opacity: 0;
+  background: var(--bg);
+  border: 2px solid var(--ink);
+  box-shadow: 5px 5px 0 var(--ink);
+  font-size: 13px; line-height: 1.25;
+}
 #tooltip.visible { opacity: 1; }
-#tooltip .country-name { font: 400 16px var(--title); }
+#tooltip .tt-name { font: 700 17px var(--title); margin-bottom: 12px; }
+#tooltip .tt-row { margin-top: 8px; }
+#tooltip .tt-row b { display: block; font-weight: 800; }
 
 /* finestre */
 dialog { max-width: 560px; padding: 28px 32px; line-height: 1.5; color: var(--ink); background: var(--bg); border: 2.5px solid var(--ink); }
@@ -79,14 +131,13 @@ dialog .close-button { position: absolute; top: 10px; right: 14px; border: 0; ba
 .detail-sub { margin: 10px 0 0 38px; min-height: 1.5em; color: #272318; }
 .detail-sub b { color: var(--ink); }
 
-/* freccia indietro: grande 2/3 del nome del paese, a sinistra */
 .title-row { display: flex; align-items: center; gap: 16px; }
 .back-arrow { display: block; color: var(--ink); line-height: 0; }
 .back-arrow svg { display: block; width: calc(var(--h1-size) * 2 / 3); height: calc(var(--h1-size) * 2 / 3); }
 .back-arrow:hover { transform: translateX(-3px); }
 
-/* istogramma paese occupa 2/3 della pagina */
-.country-page #scrollBox { width: 60vw; margin-left: -30px}
-
-/* diminuito il padding superiore del nome del Paese selezionato (era troppo sotto prima) */
-.country-page header { padding-top: 18px; }
+.country-page #scrollBox { width: 60vw; margin-left: 20px; }   /* i numeri (1%, 10%...) partono piu' dentro */
+.country-page header { padding-top: 0; }   /* stessa altezza dell'header dell'index: i bottoni e il loro hover riempiono tutto lo spazio */
+.country-page .title-row { align-items: stretch; padding-left: 18px; }   /* la linea dopo il nome del paese va da sopra a sotto, come nell'index */
+.country-page .back-arrow { display: flex; align-items: center; }
+.country-page .title-row h1 { padding-left: 2px; }
