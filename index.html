@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <title>PAY DAY</title>
 
-  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:ital,wght@0,100..900;1,100..900&family=Unbounded:wght@200..900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 
   <script src="libraries/p5.min.js"></script>
@@ -18,17 +18,25 @@
     <div class="toolbar">
       <div id="searchBox">
         <input id="searchInput" placeholder="Country...">
-        <button class="round-button" id="searchButton">search</button>
+        <button class="round-button" id="searchButton" aria-label="search">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="10" cy="10" r="7"/><path d="M15.5 15.5L22 22"/></svg>
+        </button>
       </div>
       <button class="pill-button" onclick="methodologyDialog.showModal()">METHODOLOGY</button>
       <button class="pill-button" onclick="teamDialog.showModal()">TEAM</button>
     </div>
   </header>
 
-  <p class="intro">For every country: the average post-tax income of the bottom 50% (lower dot) and of the top 1% (top dot).<br>Click a country for details.</p>
+  <!-- il canvas di p5 finisce dentro #chartBox -->
+  <div id="scrollBox">
+    <div id="chartBox"></div>
 
-  <!-- il canvas di p5 finisce dentro #chartBox; #scrollBox lo fa scorrere in orizzontale -->
-  <div id="scrollBox"><div id="chartBox"></div></div>
+    <button class="info-button" onclick="infoBox.classList.add('open'); this.style.display='none'">i</button>
+    <div class="info-box" id="infoBox">
+      <p>The graph shows the difference in average income between the richest 1% and the poorest 50% of each nation in the world. Hover a bar for details, click it to open the country page.</p>
+      <button onclick="infoBox.classList.remove('open'); document.querySelector('.info-button').style.display='block'">Close</button>
+    </div>
+  </div>
 
   <!-- barra degli anni (la riempie drawYearBar nello sketch) -->
   <div id="yearBar"></div>
@@ -36,15 +44,14 @@
   <!-- tooltip: lo muove lo sketch -->
   <div id="tooltip"></div>
 
-  <!-- finestre: si aprono con showModal(), si chiudono con la x, Esc o un click fuori -->
   <dialog id="methodologyDialog" onclick="if (event.target == this) this.close()">
     <form method="dialog"><button class="close-button">x</button></form>
     <h3>Methodology</h3>
-    <p>Each line is one country. For the selected year the <b>lower dot</b> is the average post-tax income (USD) of the poorest 50% (<code>avg_posttax_usd_bottom50</code>) and the <b>upper dot</b> is the average post-tax income of the richest 1% (<code>avg_posttax_usd_top1</code>).</p>
+    <p>Each bar is one country. For the selected year its height is the <b>difference</b> between the average post-tax income (USD) of the richest 1% (<code>avg_posttax_usd_top1</code>) and of the poorest 50% (<code>avg_posttax_usd_bottom50</code>).</p>
     <ul>
-      <li>The vertical axis is <b>logarithmic</b> ($100 to ~$7M): every gridline is 10x the one below, so the length of a line is the ratio between top and bottom, not the dollar gap.</li>
+      <li>The vertical axis is linear but in two stretches: 0 to 1M uses most of the height, 1M to 3M is compressed. Bars above 3M are cut and continue dashed, with their value written on top.</li>
       <li>2000-2024, countries grouped by continent, alphabetical.</li>
-      <li>Hover a line for the country name, click it to open the country specific page.</li>
+      <li>Hover a bar for the exact values, click it to open the country specific page.</li>
       <li>Use the left / right arrow keys or the year bar to change year.</li>
     </ul>
   </dialog>

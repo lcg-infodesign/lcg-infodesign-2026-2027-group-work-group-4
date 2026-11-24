@@ -1,35 +1,46 @@
-let csvPath = 'assets/wid_panel_2000_2024.csv';   // dove si trova il file csv
+let csvPath = 'assets/wid_panel_2000_2024.csv';   // dove si trova il file csv 
 
 // i 6 continenti: nome nel csv, nome sotto il grafico, colore (\n vuol dire "vai a capo")
 let continents = [
-  { key: 'Africa',        label: 'AFRICA',         color: '#8A9A4B' },
-  { key: 'Asia',          label: 'ASIA',           color: '#D9622B' },
-  { key: 'Europe',        label: 'EUROPE',         color: '#3E4278' },
-  { key: 'North America', label: 'NORTH\nAMERICA', color: '#7B5EA0' },
-  { key: 'South America', label: 'SOUTH\nAMERICA', color: '#3E9E94' },
-  { key: 'Oceania',       label: 'OCEANIA',        color: '#3A1E14' }
+  { key: 'Africa',        label: 'AFRICA',         color: '#8A5A1E' },
+  { key: 'Asia',          label: 'ASIA',           color: '#D9532B' },
+  { key: 'Europe',        label: 'EUROPE',         color: '#2B3A8C' },
+  { key: 'North America', label: 'NORTH\nAMERICA', color: '#4A8F3C' },
+  { key: 'South America', label: 'SOUTH\nAMERICA', color: '#B0309A' },
+  { key: 'Oceania',       label: 'OCEANIA',        color: '#5B2A9A' }
 ];
 
 let marginLeft = 74;   // spazio vuoto a sinistra del grafico
-let marginRight = 28;  // spazio vuoto a destra
-let marginTop = 60;    // spazio vuoto in alto (ci stanno le scritte delle linee tagliate)
+let marginRight = 40;  // spazio vuoto a destra
+let marginTop = 16;    // spazio vuoto in alto
 let marginBottom = 62; // spazio vuoto in basso (ci stanno i nomi dei continenti)
+let topSpace = 90;     // spazio sopra la linea del 3M: ci stanno le etichette delle barre tagliate (es. "6M")
 
-let axisBreak = 1000000;   // da 1 milione in su la scala si comprime
-let axisMax = 3000000;     // cima della scala: oltre questo valore la linea viene tagliata
-let breakShare = 0.75;     // quanta parte dell'altezza usa la zona da 0 a 1 milione
-let cutHeight = 30;        // spazio sopra la cima della scala, dove finiscono le linee tagliate
+// ASSE A DUE TRATTI (lineare, non più logaritmico):
+// da 0 a 1M occupa il 76% dell'altezza, da 1M a 3M il resto (più compresso).
+// Le barre oltre 3M vengono tagliate e continuano tratteggiate, con il valore scritto sopra.
+let splitValue = 1000000;   // dove l'asse cambia scala
+let maxValue = 3000000;     // massimo dell'asse
+let lowerShare = 0.76;      // quanta altezza occupa il primo tratto (0 -> 1M)
 
-let axisValues = [0, 200000, 400000, 600000, 800000, 1000000, 2000000, 3000000];   // dove sta ogni numero dell'asse
-let axisLabels = ['0', '200K', '400K', '600K', '800K', '1M', '2M', '3M'];          // numeri scritti sull'asse
+// numeri scritti sull'asse (v = valore in dollari, label = testo)
+let majorTicks = [
+  { v: 0,       label: '0' },
+  { v: 200000,  label: '200K' },
+  { v: 400000,  label: '400K' },
+  { v: 600000,  label: '600K' },
+  { v: 800000,  label: '800K' },
+  { v: 1000000, label: '1M' },
+  { v: 2000000, label: '2M' },
+  { v: 3000000, label: '3M' }
+];
 
 let years = [];     // tutti gli anni del csv, in ordine
 let countries = [];   // tutti i paesi (vedi readData per sapere cosa c'è dentro)
 let yearIndex = 0;    // quale anno è scelto (0 = il primo della lista)
 
-let poorBall = [];  // altezza attuale della pallina bassa di ogni paese
-let richBall = [];  // altezza attuale della pallina alta di ogni paese
-let lineX = [];    // posizione x della linea di ogni paese
+let diffBall = [];  // altezza attuale (animata) della barra di ogni paese = ricchi - poveri
+let lineX = [];    // posizione x della barra di ogni paese
 let labelX = [];   // posizione x del nome di ogni continente
 let space = 6;    // larghezza dello spazio di un paese
 
@@ -53,8 +64,7 @@ async function setup() {
   let lines = await loadStrings(csvPath);   // si carica il file csv e await tiene set up in pausa affinché il caricamento è finito
   readData(lines);  //readData effetua un parsing, ovvero prende dei string di dati e li organizza in formati utilizzabili in codice (come un array)
 
-  // adesso che ho i dati, creo il grafico
-  createCanvas(max(1000, scrollBox.clientWidth), max(470, windowHeight - 300)).parent('chartBox');
+  createCanvas(scrollBox.clientWidth, scrollBox.clientHeight).parent('chartBox');
   placeLines();
   drawYearBar();
 
@@ -74,6 +84,15 @@ async function setup() {
   searchInput.oninput = function () {
     searchText = searchInput.value.trim().toLowerCase();
   };
+}
+
+//quando la dimensione della finestra cambia il grafico si adatta
+function windowResized() {
+  if (countries.length == 0) return;
+  resizeCanvas(scrollBox.clientWidth, scrollBox.clientHeight);
+  lineX = [];
+  labelX = [];
+  placeLines();
 }
 
 // da nome del continente ('Asia') a numero (1)
@@ -106,7 +125,7 @@ function readData(lines) {
 
     // se è la prima volta che il paese è visto viene creato la sua scheda
     if (cards[row.iso2] == undefined) {
-      cards[row.iso2] = { name: row.country_name, continent: continentNumber(row.continent), poor: {}, rich: {} };
+      cards[row.iso2] = { iso: row.iso2, name: row.country_name, continent: continentNumber(row.continent), poor: {}, rich: {} }; //cambiato il codice per costruire il link alla pagina di dettaglio
     }
 
     // le , nel csv diventano . - parseFloat legge solo . come separatore
@@ -133,6 +152,9 @@ function getPoor(i) { return countries[i].poor[years[yearIndex]]; }
 // valore dell'1% più ricco del paese i, nell'anno scelto
 function getRich(i) { return countries[i].rich[years[yearIndex]]; }
 
+// la differenza tra i due: è l'altezza della barra
+function getDiff(i) { return getRich(i) - getPoor(i); }
+
 // vero sole se entrambi valori sono maggiori di 0, altrimenti è falso
 function hasData(i) {
   return getPoor(i) > 0 && getRich(i) > 0;
@@ -145,15 +167,30 @@ function isHighlighted(i) {
   return countries[i].name.toLowerCase().includes(searchText);
 }
 
-// da dollari a altezza sullo schermo (scala lineare, compressa sopra 1 milione)
+// da dollari a altezza sullo schermo (asse a due tratti: 0 -> 1M poi 1M -> 3M, vedi sopra)
 function yPosition(dollars) {
-  let bottomY = height - marginBottom;               // altezza dello 0
-  let topY = marginTop + cutHeight;                  // altezza di 3 milioni
-  let breakY = lerp(bottomY, topY, breakShare);      // altezza di 1 milione
+  let base = height - marginBottom;       // altezza dello 0
+  let plotTop = marginTop + topSpace;     // altezza del 3M
+  let h = base - plotTop;                 // altezza totale dell'asse
+  let v = constrain(dollars, 0, maxValue);   // oltre il massimo ci si ferma al massimo
 
-  if (dollars <= axisBreak) return map(dollars, 0, axisBreak, bottomY, breakY);    // zona normale
-  if (dollars <= axisMax) return map(dollars, axisBreak, axisMax, breakY, topY);   // zona compressa
-  return marginTop;                                                                // oltre la scala: linea tagliata
+  let share;   // che frazione dell'altezza (0 = base, 1 = cima)
+  if (v <= splitValue) {
+    share = (v / splitValue) * lowerShare;
+  } else {
+    share = lowerShare + ((v - splitValue) / (maxValue - splitValue)) * (1 - lowerShare);
+  }
+  return base - share * h;
+}
+
+// numeri con il punto delle migliaia: 1419388 diventa "1.419.388"
+function formatFull(n) {
+  return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+// versione corta per le barre tagliate: 6000000 diventa "6M", 3600000 diventa "3.6M"
+function formatShort(v) {
+  return (v / 1000000).toFixed(1).replace('.0', '') + 'M';
 }
 
 // calcola la x di ogni paese e il centro del nome di ogni continente
@@ -169,7 +206,7 @@ function placeLines() {
     let start = x;
     for (let c = 0; c < countries.length; c++) {    // ...si guardano tutti i paesi
       if (countries[c].continent == i) {            // se è di questo continente
-        lineX.push(x + space / 2);                  // la linea sta al centro del suo spazio
+        lineX.push(x + space / 2);                  // la barra sta al centro del suo spazio
         x = x + space;
       }
     }
@@ -181,6 +218,10 @@ function placeLines() {
 // scrive in html 7 posti: 3 anni prima, l'anno scelto al centro, 3 anni dopo
 function drawYearBar() {
   let html = '';
+
+  // le due frecce disegnate in SVG (al posto del testo < e >)
+  let arrowLeft = '<svg width="24" height="16" viewBox="0 0 24 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 8H2M8 1L1 8l7 7"/></svg>';
+  let arrowRight = '<svg width="24" height="16" viewBox="0 0 24 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 8H22M16 1l7 7-7 7"/></svg>';
 
   for (let offset = -3; offset <= 3; offset++) {
     let pos = yearIndex + offset;     // posizione dell'anno di questo posto
@@ -201,10 +242,10 @@ function drawYearBar() {
       if (pos == years.length - 1) rightOff = ' disabled';
 
       html += '<div class="current-year">';
-      html += '<button class="year-arrow" onclick="changeYear(' + (pos - 1) + ')"' + leftOff + '>&lt;</button>';
+      html += '<button class="year-arrow" onclick="changeYear(' + (pos - 1) + ')"' + leftOff + '>' + arrowLeft + '</button>';
       html += '<div class="year-number">' + years[pos] + '</div>';
-      html += '<button class="year-arrow" onclick="changeYear(' + (pos + 1) + ')"' + rightOff + '>&gt;</button>';
-      html += '</div>';          //tutto ciò per aggiungere un contenere i bottoni e l'anno; &lt e &gt sono codici html per < e >
+      html += '<button class="year-arrow" onclick="changeYear(' + (pos + 1) + ')"' + rightOff + '>' + arrowRight + '</button>';
+      html += '</div>';          //tutto ciò per aggiungere un contenere i bottoni e l'anno
     }
   }
 
@@ -213,18 +254,25 @@ function drawYearBar() {
 
 // chiamata dai bottoni della barra: cambia anno
 function changeYear(newIndex) {
+  if (newIndex < 0 || newIndex >= years.length) return;   // fuori dalla lista: non faccio niente
   yearIndex = newIndex;
   drawYearBar();
-  // le palline si muovono da sole, ci pensa moveBalls()
+  // le barre si muovono da sole, ci pensa moveBalls()
+}
+
+// frecce della tastiera: cambiano anno (non se c'è una finestra aperta o se si sta scrivendo nella ricerca)
+function keyPressed() {
+  if (dialogIsOpen() || document.activeElement == searchInput) return;
+  if (keyCode == LEFT_ARROW) changeYear(yearIndex - 1);
+  if (keyCode == RIGHT_ARROW) changeYear(yearIndex + 1);
 }
 
 // --- funzionamenti MOUSE ---
 
-// click su una linea: apre la pagina del suo continente
+// click su una barra: apre la pagina del suo continente
 function mouseClicked() {
-  if (hoverCountry < 0) return;   // nessuna linea sotto il mouse: non faccio niente
-  let continentName = continents[countries[hoverCountry].continent].key;
-  location.href = 'continent.html?c=' + continentName + '&y=' + years[yearIndex];
+  if (hoverCountry < 0) return;   // nessuna barra sotto il mouse: non faccio niente
+  location.href = 'country.html?c=' + countries[hoverCountry].iso + '&y=' + years[yearIndex]; //click porta a country.html, passando il codice del paese (c=IT) e l'anno selezionato (y=2024) > la pagina di dettaglio si apre sullo stesso anno dell'index.
 }
 
 // c'è una finestra aperta (METHODOLOGY o TEAM)?
@@ -240,31 +288,37 @@ function findCountryUnderMouse() {
   // mouse fuori dal grafico
   if (mouseX < 0 || mouseX > width || mouseY < 0 || mouseY > height) return -1;
 
-  // trovo la linea più vicina al mouse (guardando solo la x)
+  // trovo la barra più vicina al mouse (guardando solo la x)
   let closest = 0;
   for (let j = 1; j < countries.length; j++) {
     if (abs(lineX[j] - mouseX) < abs(lineX[closest] - mouseX)) closest = j;
   }
 
-  // se è troppo lontana, il mouse non è su nessuna linea
+  // se è troppo lontana, il mouse non è su nessuna barra
   if (abs(lineX[closest] - mouseX) > max(space / 2, 3.5)) return -1;
   if (hasData(closest) == false) return -1;
 
-  // controllo anche l'altezza (+18 pixel di margine, perché le linee sono sottili)
-  let top = yPosition(richBall[closest]) - 18;
-  let bottom = yPosition(poorBall[closest]) + 18;
+  // controllo anche l'altezza: dalla cima della barra (+18 pixel di margine, perché le barre sono sottili) fino alla linea di base
+  let top = yPosition(diffBall[closest]) - 18;
+  let bottom = yPosition(0) + 4;
   if (mouseY >= top && mouseY <= bottom) return closest;
 
   return -1;
 }
 
-// mostra il nome del paese vicino al mouse
+// mostra il riquadro con i dati del paese vicino al mouse
 function updateTooltip() {
   if (hoverCountry < 0) {
     tooltip.classList.remove('visible');
     return;
   }
-  tooltip.innerHTML = '<div class="country-name">' + countries[hoverCountry].name + '</div>';
+
+  // il testo del riquadro: nome del paese + i tre valori
+  let html = '<div class="tt-name">' + countries[hoverCountry].name + '</div>';
+  html += '<div class="tt-row">Top 1% avg income:<b>' + formatFull(getRich(hoverCountry)) + ' USD</b></div>';
+  html += '<div class="tt-row">Bottom 50% avg income:<b>' + formatFull(getPoor(hoverCountry)) + ' USD</b></div>';
+  html += '<div class="tt-row">Difference:<b>' + formatFull(getDiff(hoverCountry)) + ' USD</b></div>';
+  tooltip.innerHTML = html;
   tooltip.classList.add('visible');   // prima lo accendo, così posso misurare la sua larghezza
 
   if (winMouseX < windowWidth / 2) {
@@ -274,78 +328,66 @@ function updateTooltip() {
     // mouse nella metà destra: il tooltip sta a sinistra del mouse
     tooltip.style.left = (winMouseX - tooltip.offsetWidth - 16) + 'px';
   }
-  tooltip.style.top = (winMouseY + 16) + 'px';
+  // il tooltip non esce dal fondo della finestra
+  tooltip.style.top = min(winMouseY + 16, windowHeight - tooltip.offsetHeight - 10) + 'px';
 }
 
 // --- disegno ---
 
-// avvicina una pallina al suo valore vero, di un po' alla volta (16%)
-// così quando cambi anno le palline scivolano invece di saltare
+// avvicina la barra al suo valore vero, di un po' alla volta (16%)
+// così quando cambi anno le barre scivolano invece di saltare
 function slide(now, target) {
-  if (!(target > 0)) return now;          // niente dato: la pallina resta dov'è
-  if (!(now > 0)) return target;          // prima volta: salta subito al valore
+  if (!(target > 0)) return now;   // niente dato: la barra resta dov'è
+  if (!(now > 0)) return target; // prima volta: salta subito al valore
   return lerp(now, target, 0.16);
 }
 
-// animazione palline
+// animazione barre
 function moveBalls() {
   for (let i = 0; i < countries.length; i++) {
-    poorBall[i] = slide(poorBall[i], getPoor(i));
-    richBall[i] = slide(richBall[i], getRich(i));
+    let target = undefined;                       // se non ci sono dati il bersaglio non esiste
+    if (hasData(i)) target = getDiff(i);
+    diffBall[i] = slide(diffBall[i], target);
   }
 }
 
-// disegna un paese = una linea + due palline
+// disegna un paese = una barra sottile che parte dalla linea di base
 function drawCountry(i) {
-  let bold = isHighlighted(i);                          // è evidenziato?
+  let bold = isHighlighted(i);  // è evidenziato?
   let somethingHighlighted = (hoverCountry >= 0 || searchText != '');
 
-  // il colore è scritto come '#RRGGBB'. Aggiungendo '37' alla fine diventa quasi trasparente
+  // il colore è scritto come '#RRGGBB'. Aggiungendo '40' alla fine diventa quasi trasparente
   let colorText = continents[countries[i].continent].color;
-  if (somethingHighlighted && bold == false) colorText = colorText + '37';
+  let faded = somethingHighlighted && bold == false;
+  if (faded) colorText = colorText + '40';
 
-  // misure normali...
-  let ballSize = 6;
-  let lineWeight = 1.5;
-  // ...più grandi se evidenziato
-  if (bold) {
-    ballSize = 8.4;
-    lineWeight = 2.4;
-  }
+  // misura normale...
+  let lineWeight = 2;
+  // ...più spessa se evidenziato
+  if (bold) lineWeight = 3;
 
-  let lowY = yPosition(poorBall[i]);
-  let highY = yPosition(richBall[i]);
+  let d = diffBall[i];       // altezza della barra in dollari
+  let x = lineX[i];
+  let baseY = yPosition(0);    // dove parte la barra
+  let topY = yPosition(d);    // dove finisce (oltre 3M si ferma a 3M)
 
-  // la parte piena della linea arriva al massimo alla cima della scala
-  let solidY = highY;
-  let isCut = richBall[i] > axisMax;
-  if (isCut) solidY = yPosition(axisMax);
-
+  strokeCap(SQUARE);
   stroke(colorText);
   strokeWeight(lineWeight);
-  line(lineX[i], lowY, lineX[i], solidY);
+  line(x, baseY, x, topY);   // la barra
 
-  // linea tagliata: sopra la cima della scala continua tratteggiata
-  if (isCut) {
-    drawingContext.setLineDash([3, 3]);
-    line(lineX[i], solidY, lineX[i], highY);
-    drawingContext.setLineDash([]);
-  }
+  // barra oltre il massimo: prosegue tratteggiata, con il valore scritto sopra
+  if (d > maxValue) {
+    drawingContext.setLineDash([3, 3]);  // tratteggio
+    line(x, topY, x, topY - 26);
+    drawingContext.setLineDash([]);  // torna alla linea piena
 
-  noStroke();
-  fill(colorText);
-  circle(lineX[i], lowY, ballSize);        // pallina bassa
-  circle(lineX[i], highY, ballSize);       // pallina alta
-
-  // linea tagliata: scrivo il valore vero sopra la linea, girato di lato
-  if (isCut) {
-    push();
-    translate(lineX[i], highY - 8);
-    rotate(-HALF_PI);
-    fill('#8B8873');
-    textAlign(LEFT, CENTER);
-    text((getRich(i) / 1000000).toFixed(1) + 'M', 0, 0);
-    pop();
+    noStroke();
+    if (faded) fill('#8B887340');
+    else fill('#8B8873');
+    textSize(11);
+    textAlign(CENTER, BOTTOM);
+    text(formatShort(d), x, topY - 30);
   }
 }
 
@@ -353,27 +395,37 @@ function drawCountry(i) {
 function draw() {
   if (countries.length == 0) return;       // dati non ancora pronti: non disegno
 
-  background('#FDFBEC');
+  background('#FFFCF2');
   moveBalls();
   hoverCountry = findCountryUnderMouse();
   updateTooltip();
 
-  let baseline = yPosition(0);             // altezza della linea di base (0 dollari)
+  let baseline = yPosition(0);      // altezza della linea di base (0 dollari)
+
+  textFont('Geist Mono');
+  textSize(11);
+
+  // linee sottili tra 1M e 3M (una ogni 200K)
+  stroke('#DAD7C6');
+  strokeWeight(1);
+  for (let v = 1200000; v < maxValue; v += 200000) {
+    if (v == 2000000) continue;            // il 2M ha già la sua linea scura
+    line(marginLeft - 4, yPosition(v), width - marginRight, yPosition(v));
+  }
 
   // griglia e numeri sull'asse
-  textFont('Space Mono');
-  textSize(11);
-  for (let k = 0; k < axisLabels.length; k++) {
-    let y = yPosition(axisValues[k]);      // altezza di questo numero dell'asse
+  for (let k = 0; k < majorTicks.length; k++) {
+    let y = yPosition(majorTicks[k].v);
 
-    stroke('#E6E3D1');
+    if (majorTicks[k].v >= splitValue) stroke('#25241B');   // 1M, 2M, 3M: linee scure
+    else stroke('#E3E0CF');                                  // 200K ... 800K: linee chiare
     strokeWeight(1);
-    line(marginLeft - 4, y, width - marginRight, y);   // linea della griglia
+    line(marginLeft - 4, y, width - marginRight, y);         // linea della griglia
 
     noStroke();
-    fill('#8B8873');
+    fill('#25241B');
     textAlign(RIGHT, CENTER);
-    text(axisLabels[k], marginLeft - 14, y);           // numero
+    text(majorTicks[k].label, marginLeft - 14, y);           // numero
   }
 
   // paesi: prima quelli normali, poi quelli evidenziati (così stanno sopra)
@@ -386,16 +438,17 @@ function draw() {
 
   // linea di base spessa (copre anche la prima linea della griglia)
   stroke('#25241B');
-  strokeWeight(3);
+  strokeWeight(2.5);
+  strokeCap(SQUARE);
   line(marginLeft - 4, baseline, width - marginRight + 2, baseline);
 
   // nomi dei continenti sotto la linea di base
   noStroke();
   fill('#25241B');
   textSize(12);
-  textLeading(16);                         // distanza tra le due righe di un nome
+  textLeading(20);   // distanza tra le due righe di un nome
   textAlign(CENTER, TOP);
   for (let g = 0; g < continents.length; g++) {
-    text(continents[g].label, labelX[g], baseline + 16);
+    text(continents[g].label, labelX[g], baseline + 22);
   }
 }
