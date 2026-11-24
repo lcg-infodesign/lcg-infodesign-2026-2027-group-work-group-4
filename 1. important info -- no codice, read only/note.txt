@@ -1,0 +1,27 @@
+diario di bordo
+
+15/11 
+
+il progetto avrà questa struttura:
+
+index.html(da finire), continent.html (da fare), > non ancora aggiunti : visione di dettagio html
+sketch.js(dafinire), continent.js (da fare).     > non ancora aggiunti : visione di dettagio js
+style.css
+ assets/wid_panel_2000_2024.csv
+
+sketch.js è in riferimento alla visualizzazione d'insieme
+note su sketch.js:
+line 87-88
+ per ogni paese viene creato una "scheda" (array) con:
+   name      = nome del paese
+   continent = numero del continente
+   poor      = valore del 50% più povero, anno per anno (es. poor[2020])
+   rich      = valore dell'1% più ricco, anno per anno (es. rich[2020])
+   le schede sono in "cards", una per ogni codice iso2
+
+continent.js è in riferimento alla visualizzazione meso 
+
+   abbiamo considerato una visualizzazione lineare ma rappresentare range di numeri così grandi è impossibile
+   i bottoni "methodology" e "team" non hanno ancora una animazione e i pop up tool tip potrebbero essere migliorati.
+   da aggiungere anche le varie icone (eg: search e le freccine)
+-X.B.
