@@ -33,8 +33,16 @@
 
     <button class="info-button" onclick="infoBox.classList.add('open'); this.style.display='none'">i</button>
     <div class="info-box" id="infoBox">
-      <p>The graph shows the difference in average income between the richest 1% and the poorest 50% of each nation in the world. Hover a bar for details, click it to open the country page.</p>
+      <p>Each country is a line between two groups: the poorest 50% (filled dot) and the richest 1% (empty circle). The <b>length of the line is the income gap</b>: <b>Income gap = Top 1% − Bottom 50%</b>. Use the two buttons at the top to switch between the <b>income in USD</b> and the <b>multiplier</b>: in the multiplier view the poorest 50% is always 1x and the line shows <b>how many times</b> the top 1% earns more (<b>Top 1% ÷ Bottom 50%</b>). Hover a country for details, click it to open the country page.</p>
+      <p style="display:flex; align-items:center; gap:10px;">
+        <svg width="24" height="56" viewBox="0 0 24 56" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 8V47"/><circle cx="12" cy="7" r="4.5" fill="var(--bg)"/><circle cx="12" cy="49" r="4.5" fill="currentColor" stroke="none"/></svg>
+        <span>the longer the line, the bigger the distance between the two groups</span>
+      </p>
       <button onclick="infoBox.classList.remove('open'); document.querySelector('.info-button').style.display='block'">Close</button>
+    </div>
+    <div class="mode-toggle">
+      <button class="mode-button active" id="usdButton">AVERAGE INCOME (USD)</button>
+      <button class="mode-button" id="timesButton">MULTIPLIER (TIMES)</button>
     </div>
   </div>
 
@@ -47,11 +55,11 @@
   <dialog id="methodologyDialog" onclick="if (event.target == this) this.close()">
     <form method="dialog"><button class="close-button">x</button></form>
     <h3>Methodology</h3>
-    <p>Each bar is one country. For the selected year its height is the <b>difference</b> between the average post-tax income (USD) of the richest 1% (<code>avg_posttax_usd_top1</code>) and of the poorest 50% (<code>avg_posttax_usd_bottom50</code>).</p>
+    <p>Each country is drawn as a line between the average post-tax income (USD) of the poorest 50% (<code>avg_posttax_usd_bottom50</code>, filled dot) and of the richest 1% (<code>avg_posttax_usd_top1</code>, empty circle). The length of the line is the <b>income gap</b> between the two. The multiplier view fixes the poorest 50% at 1x and puts the empty circle at <b>Top 1% ÷ Bottom 50%</b>, i.e. how many times the richest 1% earns the poorest 50%.</p>
     <ul>
-      <li>The vertical axis is linear but in two stretches: 0 to 1M uses most of the height, 1M to 3M is compressed. Bars above 3M are cut and continue dashed, with their value written on top.</li>
+      <li>The vertical axis is linear but in two stretches. In USD: 0 to 1M uses most of the height, 1M to 3M is compressed. In multiplier: 1x to 100x uses most of the height, 100x to 200x is compressed. When the top 1% goes beyond the top of the axis the line is cut and continues dashed, with the value written on top.</li>
       <li>2000-2024, countries grouped by continent, alphabetical.</li>
-      <li>Hover a bar for the exact values, click it to open the country specific page.</li>
+      <li>Hover a country for the exact values and the income gap, click it to open the country specific page.</li>
       <li>Use the left / right arrow keys or the year bar to change year.</li>
     </ul>
   </dialog>

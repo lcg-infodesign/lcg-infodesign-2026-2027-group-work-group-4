@@ -4,6 +4,9 @@
   --bg: #FFFCF2;
   --title: 'Unbounded', sans-serif;
   --h1-size: 35px;
+  --info-left: 28px;   /* posizione del bottone "i" */
+  --info-top: 24px;
+  --info-size: 34px;
 }
 
 * { box-sizing: border-box; }
@@ -77,19 +80,54 @@ header h1 { display: flex; align-items: center; padding: 0 18px; border-right: 2
 
 /* bottone "i" e riquadro introduttivo */
 .info-button {
-  position: absolute; top: 24px; left: 28px; z-index: 2;
-  width: 34px; height: 34px;
+  position: absolute; top: var(--info-top); left: var(--info-left); z-index: 2;
+  width: var(--info-size); height: var(--info-size);
   font-size: 18px; background: var(--bg);
   border: 2px solid var(--ink); box-shadow: 4px 4px 0 var(--ink);
   cursor: pointer;
 }
 .info-box {
   display: none;
-  position: absolute; top: 24px; left: 28px; z-index: 3;
+  position: absolute; top: var(--info-top); left: var(--info-left); z-index: 3;
   width: 400px; padding: 16px 22px;
   background: var(--bg); border: 2px solid var(--ink); box-shadow: 5px 5px 0 var(--ink);
 }
 .info-box.open { display: block; }
+
+/* sottotitolo accanto al bottone "i" (sparisce quando il riquadro e' aperto) */
+.chart-subtitle {
+  position: absolute; z-index: 1;
+  top: var(--info-top);
+  left: calc(var(--info-left) + var(--info-size) + 14px);   /* 14px = distanza dal bottone */
+  height: var(--info-size);
+  display: flex; align-items: center;
+  font: 700 16px 'Geist Mono', monospace;
+  pointer-events: none;
+}
+.info-box.open ~ .chart-subtitle { display: none; }
+
+/* bottoni USD / MULTIPLIER: al posto del sottotitolo, accanto al bottone "i" (sparisce quando il riquadro e' aperto) */
+.mode-toggle {
+  position: absolute; z-index: 1;
+  top: var(--info-top);
+  left: calc(var(--info-left) + var(--info-size) + 14px);
+  height: var(--info-size);
+  display: flex; align-items: stretch;
+}
+.info-box.open ~ .mode-toggle { display: none; }
+.mode-button {
+  padding: 0 16px;
+  font: 700 14px 'Geist Mono', monospace;
+  background: var(--bg); border: 2px solid var(--ink);
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.mode-button + .mode-button { border-left: 0; }
+/* scelto e hover: colori invertiti, come gli altri bottoni */
+.mode-button.active, .mode-button:hover {
+  background: var(--ink); color: var(--bg);
+}
+.mode-button:hover { text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 2px; }
 .info-box p { margin: 0 0 14px; }
 .info-box button { padding: 0; border: 0; background: none; text-decoration: underline; color: #8B8873; cursor: pointer; }
 
@@ -119,6 +157,8 @@ header h1 { display: flex; align-items: center; padding: 0 18px; border-right: 2
 #tooltip .tt-name { font: 700 17px var(--title); margin-bottom: 12px; }
 #tooltip .tt-row { margin-top: 8px; }
 #tooltip .tt-row b { display: block; font-weight: 800; }
+/* riga dell'income gap: blocco a colori invertiti, a filo con i bordi del riquadro */
+#tooltip .tt-gap { margin: 14px -20px -18px; padding: 10px 20px; background: var(--ink); color: var(--bg); }
 
 /* finestre */
 dialog { max-width: 560px; padding: 28px 32px; line-height: 1.5; color: var(--ink); background: var(--bg); border: 2.5px solid var(--ink); }
@@ -141,3 +181,42 @@ dialog .close-button { position: absolute; top: 10px; right: 14px; border: 0; ba
 .country-page .title-row { align-items: stretch; padding-left: 18px; }   /* la linea dopo il nome del paese va da sopra a sotto, come nell'index */
 .country-page .back-arrow { display: flex; align-items: center; }
 .country-page .title-row h1 { padding-left: 2px; }
+
+/* riquadro GDP SHARE (country.html: lo crea country.js) */
+.gdp-panel {
+  --panel-shadow: 8px;
+  position: absolute;
+  padding: 22px 26px 24px;
+  color: var(--bg); background: var(--ink);
+  border: 2px solid var(--bg); box-shadow: var(--panel-shadow) var(--panel-shadow) 0 var(--ink);
+}
+.gdp-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.gdp-title { margin: 0; font: 900 28px var(--title); line-height: 1.1; }
+.gdp-caption { margin: 12px 0 0; font-size: 15px; font-weight: 600; }
+.gdp-pie { display: flex; justify-content: center; margin: 16px 0 18px; }
+.gdp-legend { display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.gdp-legend-item { display: flex; align-items: center; gap: 14px; font-size: 14px; line-height: 1.3; }
+.gdp-dot { flex: 0 0 20px; width: 20px; height: 20px; border-radius: 50%; }
+
+/* bottone "i" del riquadro: stesso hover degli altri bottoni (colori invertiti) */
+.gdp-info-button {
+  flex: 0 0 auto; width: 40px; height: 40px; padding: 0;
+  color: var(--bg); background: transparent;
+  border: 2px solid var(--bg); border-radius: 0;
+  font-size: 20px; cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.gdp-info-button:hover { background: var(--bg); color: var(--ink); }
+
+/* riquadro che si apre con la "i": copre il riquadro, stile come quello della pagina principale */
+.gdp-info-box {
+  display: none;
+  position: absolute; top: 14px; left: 14px; right: 14px; z-index: 2;
+  padding: 16px 20px;
+  color: var(--ink); background: var(--bg);
+  border: 2px solid var(--ink); box-shadow: 4px 4px 0 var(--ink);
+  font-size: 13px; line-height: 1.45;
+}
+.gdp-info-box.open { display: block; }
+.gdp-info-box p { margin: 0 0 12px; }
+.gdp-info-close { padding: 0; border: 0; background: none; text-decoration: underline; color: #8B8873; cursor: pointer; }
